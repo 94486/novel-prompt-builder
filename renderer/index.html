@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'">
+  <title>龙猫小说提示词管理器</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- 顶部栏：可拖拽区域（自定义无边框标题栏） -->
+  <header id="topbar">
+    <div class="topbar-left">
+      <div class="app-icon">
+        <img src="icons/app-logo.svg" alt="" class="app-icon-img" draggable="false">
+      </div>
+      <span class="app-title" id="app-title">龙猫小说提示词管理器</span>
+      <div class="project-switch">
+        <select id="project-select" class="project-select" title="切换小说项目"></select>
+        <button class="icon-btn small" id="btn-project-rename" title="重命名当前项目">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="icon-btn small" id="btn-project-new" title="新建项目">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+        <button class="btn ghost small" id="btn-library" title="从资产池导入素材">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l10 6-10 6L2 8z"/><path d="M2 16l10 6 10-6"/><path d="M2 12l10 6 10-6"/></svg>
+          素材库
+        </button>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <span class="gen-indicator hidden" id="gen-indicator" title="AI 正在后台生成，可继续切换界面操作">
+        <svg class="ico spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 3a9 9 0 1 1-8.6 6"/></svg>
+        <span id="gen-indicator-text">生成中…</span>
+      </span>
+      <button class="icon-btn" id="btn-settings" title="大模型设置">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+    </div>
+    <div class="titlebar-controls no-drag">
+      <button class="titlebar-btn" id="win-min" title="最小化" aria-label="最小化">
+        <svg viewBox="0 0 10 10" width="10" height="10" aria-hidden="true"><line x1="0" y1="5" x2="10" y2="5" stroke="currentColor" stroke-width="1.1"/></svg>
+      </button>
+      <button class="titlebar-btn" id="win-max" title="最大化" aria-label="最大化">
+        <svg viewBox="0 0 10 10" width="10" height="10" aria-hidden="true" id="win-max-svg"><rect x="0.5" y="0.5" width="9" height="9" fill="none" stroke="currentColor" stroke-width="1.1"/></svg>
+      </button>
+      <button class="titlebar-btn titlebar-close" id="win-close" title="关闭" aria-label="关闭">
+        <svg viewBox="0 0 10 10" width="10" height="10" aria-hidden="true"><line x1="0" y1="0" x2="10" y2="10" stroke="currentColor" stroke-width="1.1"/><line x1="10" y1="0" x2="0" y2="10" stroke="currentColor" stroke-width="1.1"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- 主体：左侧类目栏 + 主内容区 -->
+  <div id="layout">
+
+    <!-- 左侧类目导航 -->
+    <aside id="rail">
+      <div class="rail-icons" id="rail-icons">
+        <!-- 由 JS 动态渲染（线性 SVG 图标 + 灰色小字计数） -->
+      </div>
+      <div class="rail-divider"></div>
+      <div class="rail-action-wrap">
+        <button class="rail-action" id="btn-synopsis" title="情节梗概（独立内容输入区）">
+          <span class="rail-action-icon">
+            <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          </span>
+          <span class="rail-action-label">情节</span>
+        </button>
+        <button class="rail-action" id="btn-chapters" title="章节管理（保存的章节提示词列表）">
+          <span class="rail-action-icon">
+            <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          </span>
+          <span class="rail-action-label">章节</span>
+          <span class="rail-action-count"></span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- 主内容区 -->
+    <main id="main">
+
+      <!-- 背景氛围：缓慢漂移的星云光斑 + 偶尔飘过的秋叶（在 #main 内，卡牌区可见） -->
+      <div class="bg-ambient" aria-hidden="true">
+        <div class="aurora aurora-1"></div>
+        <div class="aurora aurora-2"></div>
+        <div class="leaf leaf-1"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17 8C8 10 5.9 16.17 3.82 21.34l1.89.66.95-2.3c.48.17.98.3 1.34.3C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z"/></svg></div>
+        <div class="leaf leaf-2"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17 8C8 10 5.9 16.17 3.82 21.34l1.89.66.95-2.3c.48.17.98.3 1.34.3C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z"/></svg></div>
+        <div class="leaf leaf-3"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17 8C8 10 5.9 16.17 3.82 21.34l1.89.66.95-2.3c.48.17.98.3 1.34.3C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z"/></svg></div>
+        <div class="leaf leaf-4"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17 8C8 10 5.9 16.17 3.82 21.34l1.89.66.95-2.3c.48.17.98.3 1.34.3C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z"/></svg></div>
+        <div class="leaf leaf-5"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17 8C8 10 5.9 16.17 3.82 21.34l1.89.66.95-2.3c.48.17.98.3 1.34.3C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z"/></svg></div>
+      </div>
+
+      <!-- 卡牌视图（默认） -->
+      <section id="card-view" class="view">
+        <div class="cat-header">
+          <div class="cat-header-left">
+            <h2 id="cat-title"></h2>
+            <span class="cat-meta" id="cat-meta"></span>
+          </div>
+          <div class="cat-header-right">
+            <button class="btn ghost small" id="btn-select-all">全选</button>
+            <button class="btn ghost small" id="btn-select-none">全不选</button>
+            <button class="btn primary small" id="btn-new-card">＋ 新建卡牌</button>
+          </div>
+        </div>
+
+        <div class="card-deck-wrap" id="card-deck-wrap">
+          <button class="deck-nav prev" id="btn-deck-prev" title="前一张（←）">‹</button>
+          <div id="card-deck" class="card-deck"></div>
+          <button class="deck-nav next" id="btn-deck-next" title="后一张（→）">›</button>
+          <div class="card-deck-hint" id="deck-hint">点击上三分之一编辑 · 下三分之二选定/取消 · 滚轮 / 箭头 / 左右拖动切换卡牌</div>
+        </div>
+
+        <div id="card-empty" class="card-empty hidden">
+          <div class="empty-icon">
+            <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l10 6-10 6L2 8z"/><path d="M2 16l10 6 10-6"/><path d="M2 12l10 6 10-6"/></svg>
+          </div>
+          <p>这一类目下还没有卡牌</p>
+          <p class="empty-sub">点击右上角「＋ 新建卡牌」开始</p>
+        </div>
+      </section>
+
+      <!-- 情节梗概视图（独立内容输入，不是卡片） -->
+      <section id="synopsis-view" class="view hidden">
+        <div class="cat-header">
+          <div class="cat-header-left">
+            <h2 id="synopsis-title">
+              <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+              情节梗概
+            </h2>
+            <span class="cat-meta" id="synopsis-meta">字数 <span id="synopsis-count">0</span> · 已保存</span>
+          </div>
+          <div class="cat-header-right">
+            <button class="ai-btn" id="btn-synopsis-ai">
+              <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.4L19.3 10l-5.4 1.6L12 17l-1.9-5.4L4.7 10l5.4-1.6L12 3z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15z"/></svg>
+              <span>AI 润色</span>
+            </button>
+            <button class="btn ghost small" id="btn-synopsis-clear">清空</button>
+          </div>
+        </div>
+
+        <div class="synopsis-wrap">
+          <div class="synopsis-fields">
+            <div class="field">
+              <label>章节</label>
+              <input type="text" id="synopsis-chapter" placeholder="如：第一章 / 序章 / 第 12 章">
+            </div>
+            <div class="field">
+              <label>标题</label>
+              <input type="text" id="synopsis-title-input" placeholder="如：皇城东门">
+            </div>
+          </div>
+          <textarea id="synopsis-text" title="章节与标题会作为 Prompt 的定位信息；正文作为开篇，用于告诉 AI 本段要写什么。改动会自动保存。" placeholder="这一段要写什么？例如：&#10;&#10;沈砚携上古灵戒入京赶考，在皇城东门被守军盘查，恰逢顾青梧自凌霜宗下山寻他，两人重逢；同一时刻，凌霜宗追捕令已悄然送达城门。"></textarea>
+
+          <div class="synopsis-constraints">
+            <div class="group-head">
+              <span class="group-title" title="写入提示词末尾【创作约束】，控制 AI 的写作边界">创作约束</span>
+            </div>
+            <div class="constraint-preset-row">
+              <label class="preset-label">预设</label>
+              <select id="constraint-preset-select" class="constraint-preset-select"></select>
+              <button class="btn ghost small" id="btn-preset-apply" title="把所选预设套用到当前项目的创作约束">套用</button>
+              <button class="btn ghost small" id="btn-preset-manage" title="新增 / 修改 / 删除约束预设">管理预设</button>
+            </div>
+            <div class="constraint-row">
+              <div class="field">
+                <label>字数要求</label>
+                <div class="constraint-range">
+                  <input type="number" id="constraint-min" min="100" max="100000" step="100" placeholder="2000">
+                  <span class="constraint-sep">~</span>
+                  <input type="number" id="constraint-max" min="100" max="100000" step="100" placeholder="4000">
+                  <span class="constraint-unit">字</span>
+                </div>
+              </div>
+              <div class="field constraint-format-field">
+                <label>格式要求</label>
+                <input type="text" id="constraint-format" placeholder="如：第三人称有限视角、对话单独成行…">
+              </div>
+            </div>
+            <div class="field">
+              <label>禁忌内容<span class="field-hint">每行一条，逐条写入提示词</span></label>
+              <textarea id="constraint-taboos" rows="3" placeholder="如：禁止出现现代词汇与价值观"></textarea>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 章节管理视图：已保存章节提示词列表 -->
+      <section id="chapters-view" class="view hidden">
+        <div class="cat-header">
+          <div class="cat-header-left">
+            <h2 id="chapters-title">
+              <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+              章节管理
+            </h2>
+            <span class="cat-meta" id="chapters-meta"></span>
+          </div>
+          <div class="cat-header-right">
+            <button class="btn ghost small" id="btn-chapters-export-prompts" title="把全部章节的提示词按顺序合并导出为一个 txt">
+              <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+              导出提示词
+            </button>
+            <button class="btn ghost small" id="btn-chapters-export-articles" title="把已生成 AI 文章的章节按顺序合并导出为一个 txt（未生成的章节不包含）">
+              <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.8a2 2 0 0 0 1.3 1.3L21 12l-5.8 1.9a2 2 0 0 0-1.3 1.3L12 21l-1.9-5.8a2 2 0 0 0-1.3-1.3L3 12l5.8-1.9a2 2 0 0 0 1.3-1.3z"/></svg>
+              导出文章
+            </button>
+          </div>
+        </div>
+        <div class="chapters-wrap">
+          <div id="chapter-list" class="chapter-list"></div>
+          <div id="chapter-empty" class="card-empty hidden">
+            <div class="empty-icon">
+              <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            </div>
+            <p>还没有保存的章节</p>
+            <p class="empty-sub">在「情节」页面写好章节与标题后，点「保存章节」即可存入</p>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- 底部操作栏（始终可见，用于生成 Prompt） -->
+  <footer id="bottombar">
+    <div class="bb-left">
+      <span class="bb-stat">已选 <strong id="selected-count">0</strong> 张卡牌</span>
+      <span class="bb-divider">·</span>
+      <span class="bb-stat" id="token-count">预估 Token：—</span>
+      <span class="bb-divider">·</span>
+      <span class="bb-stat bb-version" title="应用版本号">v<span id="app-version">—</span></span>
+    </div>
+    <div class="bb-right">
+      <button class="btn ghost small" id="btn-preview">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        预览
+      </button>
+      <button class="btn ghost small" id="btn-copy">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        复制 Prompt
+      </button>
+    </div>
+  </footer>
+
+  <!-- 通用卡牌编辑弹窗（新建 / 编辑共用） -->
+  <div class="modal-overlay hidden" id="card-modal">
+    <div class="modal modal-card">
+      <h2 id="card-modal-title">编辑卡牌<span class="card-ai-bar" id="card-ai-bar"></span></h2>
+      <div id="card-modal-body"></div>
+    </div>
+  </div>
+
+  <!-- 素材库（资产池）弹窗：浏览资产池素材并导入到当前项目 -->
+  <div class="modal-overlay hidden" id="library-modal">
+    <div class="modal modal-library">
+      <h2>
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l10 6-10 6L2 8z"/><path d="M2 16l10 6 10-6"/><path d="M2 12l10 6 10-6"/></svg>
+        素材库 · 资产池
+      </h2>
+      <p class="modal-hint" id="library-hint"></p>
+      <div class="library-tabs" id="library-tabs"></div>
+      <div class="library-list" id="library-list"></div>
+      <div class="modal-actions">
+        <span class="library-count" id="library-count"></span>
+        <span class="spacer"></span>
+        <button class="btn ghost" id="btn-lib-import" title="从 JSON 文件导入数据">导入 JSON</button>
+        <button class="btn ghost" id="btn-lib-export" title="将项目数据导出为 JSON 文件">导出 JSON</button>
+        <button class="btn ghost" id="btn-library-close">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Prompt 预览弹窗 -->
+  <div class="modal-overlay hidden" id="preview-modal">
+    <div class="modal modal-preview">
+      <h2>
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        Prompt 预览
+      </h2>
+      <pre id="preview-code" class="preview-code"></pre>
+      <div class="modal-actions">
+        <button class="btn ghost" id="btn-preview-close">关闭</button>
+        <span class="spacer"></span>
+        <button class="btn ghost" id="btn-preview-copy">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          复制
+        </button>
+        <button class="btn primary" id="btn-preview-save-chapter" title="把当前预览的 Prompt 存入章节管理">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          保存章节
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 章节编辑弹窗（双击章节行打开） -->
+  <div class="modal-overlay hidden" id="chapter-edit-modal">
+    <div class="modal modal-chapter-edit">
+      <h2>
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+        编辑章节
+      </h2>
+      <div class="ce-row">
+        <label>章节号</label>
+        <input type="text" id="ce-chapter" placeholder="如：第一章">
+      </div>
+      <div class="ce-row">
+        <label>标题</label>
+        <input type="text" id="ce-title" placeholder="如：皇城东门">
+      </div>
+      <div class="ce-row ce-prompt-row">
+        <label>提示词</label>
+        <textarea id="ce-prompt" rows="9" placeholder="该章节的完整提示词…"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn ghost" id="ce-cancel">取消</button>
+        <span class="spacer"></span>
+        <button class="btn primary" id="ce-save">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 章节详情弹窗：提示词 + AI 生成文章 -->
+  <div class="modal-overlay hidden" id="chapter-detail-modal">
+    <div class="modal modal-chapter-detail">
+      <h2>
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        <span id="cd-title">章节详情</span>
+      </h2>
+      <div class="cd-block">
+        <div class="cd-label">【提示词】</div>
+        <pre id="cd-prompt" class="preview-code"></pre>
+      </div>
+      <div class="cd-block" id="cd-gen-block">
+        <div class="cd-label">【AI 生成文章】</div>
+        <pre id="cd-gen" class="preview-code"></pre>
+      </div>
+      <div class="modal-actions">
+        <button class="btn ghost" id="cd-close">关闭</button>
+        <span class="spacer"></span>
+        <button class="btn ghost" id="cd-copy-gen" title="复制 AI 生成的文章">复制文章</button>
+        <button class="btn ghost" id="cd-copy-prompt" title="复制提示词">复制提示词</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 选项管理弹窗（下拉/列表选项可增删改，全局生效） -->
+  <div class="modal-overlay hidden" id="option-modal">
+    <div class="modal modal-options">
+      <h2>
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span id="option-modal-title">管理选项</span>
+      </h2>
+      <p class="modal-hint" id="option-modal-hint">增删改的选项将用于所有卡牌编辑页的该下拉列表（全局生效）。</p>
+      <div class="option-list" id="option-list"></div>
+      <div class="option-add">
+        <input type="text" id="option-add-input" placeholder="输入新选项，回车或点「添加」">
+        <button class="btn primary small" id="option-add-btn">添加</button>
+      </div>
+      <div class="modal-actions">
+        <button class="btn ghost" id="option-close">取消</button>
+        <span class="spacer"></span>
+        <button class="btn primary" id="option-save">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 约束预设管理弹窗 -->
+  <div class="modal-overlay hidden" id="preset-modal">
+    <div class="modal modal-presets">
+      <h2>
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+        <span>管理约束预设</span>
+      </h2>
+      <p class="modal-hint">预设可自由增删改，保存后全局生效；点「套用」把所选预设写入当前项目的创作约束。</p>
+      <div class="preset-list" id="preset-list"></div>
+      <div class="preset-add">
+        <button class="btn primary small" id="preset-add-btn">+ 新增预设</button>
+      </div>
+      <div class="modal-actions">
+        <button class="btn ghost" id="preset-close">取消</button>
+        <span class="spacer"></span>
+        <button class="btn primary" id="preset-save">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 大模型设置弹窗 -->
+  <div class="modal-overlay hidden" id="settings-overlay">
+    <div class="modal modal-settings">
+      <h2>
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        大模型设置
+      </h2>
+
+      <div class="field">
+        <label>接入方式</label>
+        <div class="radio-row">
+          <label class="radio-label"><input type="radio" name="provider" value="ollama"> Ollama（本地）</label>
+          <label class="radio-label"><input type="radio" name="provider" value="openai_compatible"> OpenAI 兼容接口</label>
+        </div>
+      </div>
+
+      <div class="settings-section" id="ollama-section">
+        <div class="field">
+          <label>服务地址</label>
+          <input type="text" id="cfg-ollama-url" placeholder="http://localhost:11434">
+        </div>
+        <div class="field">
+          <label>模型名称</label>
+          <input type="text" id="cfg-ollama-model" placeholder="如 llama3、qwen2.5">
+        </div>
+      </div>
+
+      <div class="settings-section hidden" id="openai-section">
+        <div class="field">
+          <label>预设快捷配置</label>
+          <div class="preset-buttons" id="preset-buttons"></div>
+        </div>
+        <div class="field">
+          <label>Base URL</label>
+          <input type="text" id="cfg-openai-url" placeholder="https://api.deepseek.com/v1">
+        </div>
+        <div class="field">
+          <label>API Key</label>
+          <input type="password" id="cfg-openai-key" placeholder="sk-...">
+        </div>
+        <div class="field">
+          <label>模型名称</label>
+          <input type="text" id="cfg-openai-model" placeholder="deepseek-chat">
+        </div>
+      </div>
+
+      <div class="test-result" id="test-result"></div>
+
+      <div class="modal-actions">
+        <button class="btn ghost" id="btn-test">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8z"/></svg>
+          <span>测试连接</span>
+        </button>
+        <span class="spacer"></span>
+        <button class="btn ghost" id="btn-settings-close">取消</button>
+        <button class="btn primary" id="btn-settings-save">保存配置</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast 通知容器 -->
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="../modules/promptBuilder.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

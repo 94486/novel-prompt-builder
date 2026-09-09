@@ -1,0 +1,22 @@
+# 依赖
+node_modules/
+
+# 用户数据（隐私：不提交）
+data/
+
+# 打包产物
+release/
+release-*/
+dist/
+*.exe
+build.log
+
+# 内部文档
+验收报告_20260907.md
+
+# 系统 / 编辑器
+.DS_Store
+Thumbs.db
+*.log
+.idea/
+.vscode/

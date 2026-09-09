@@ -1,0 +1,46 @@
+{
+  "name": "novel-prompt-builder",
+  "version": "1.4.5",
+  "description": "AI 小说创作 Prompt 组装工具 — 卡牌式设定管理、Prompt 实时组装、大模型 AI 优化",
+  "main": "main.js",
+  "author": "novel-prompt-builder",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "smoke": "electron . --smoke-test",
+    "dist": "electron-builder --win portable"
+  },
+  "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
+    "electron": "^36.0.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.novel.prompt-builder",
+    "productName": "龙猫小说提示词管理器",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**/*",
+      "modules/**/*",
+      "package.json"
+    ],
+    "extraResources": [],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "artifactName": "novel-prompt-builder-${version}-${arch}.${ext}"
+    }
+  }
+}
