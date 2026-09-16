@@ -2,9 +2,16 @@
    styles.css —— AI 小说 Prompt 组装器 全部样式
    暗色玻璃拟态主题（Glassmorphism + 轻拟物）
    · 半透明磨砂卡片 + 背景星云暗纹，减少压抑感
-   · 紫 / 青 / 暖金三色点缀，克制不堆砌
+   · 青 / 紫双色点缀，克制不堆砌
    · 左侧类目栏 + 主区(卡牌视图 / 情节视图) + 底部操作
    ============================================================ */
+
+/* 可动画自定义属性：类目切换时卡牌“扇入”上升位移 */
+@property --enterY {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
 
 :root {
   /* 强制 Chromium 深色控件渲染（防止 Windows 浅色系统主题把输入框/滚动条画成白底白框） */
@@ -24,15 +31,18 @@
 
   /* —— 文字 —— */
   --text-1: #eef2f8;
-  --text-2: #9aa7bd;
-  --text-3: #5f6b84;
+  --text-2: #a6b2c7;
+  --text-3: #7f8ca6;   /* 三级文字：提亮以改善深底对比（计数/未选徽标等） */
 
   /* —— 边框 —— */
   --border-1: rgba(255, 255, 255, 0.09);
   --border-2: rgba(255, 255, 255, 0.16);
   --border-glow: rgba(255, 255, 255, 0.05);
 
-  /* —— 分类色（柔化） —— */
+  /* —— 键盘焦点环 —— */
+  --focus-ring: 0 0 0 2px var(--bg-base), 0 0 0 4px var(--color-primary);
+
+  /* —— 分类色（冷调玻璃：青 / 紫 / 薄荷 / 琥珀） —— */
   --cat-worldbuilding: #5eb0f5;
   --cat-character:    #b18cff;
   --cat-scene:        #4fd8b0;
@@ -43,21 +53,23 @@
   --r-pill:   999px;
   --r-icon:   8px;
 
-  /* —— 卡牌阴影（轻、柔、通透，去掉厚重塑料感） —— */
+  /* —— 卡牌阴影（通透玻璃：细腻顶缘光 + 青紫氛围光） —— */
   --shadow-card:
     0 16px 36px rgba(2, 6, 18, 0.42),
     0 3px 8px rgba(2, 6, 18, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
   --shadow-card-hover:
     0 22px 48px rgba(2, 6, 18, 0.5),
-    0 0 26px -6px color-mix(in srgb, var(--color-accent) 45%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+    0 0 26px -6px color-mix(in srgb, var(--color-primary) 40%, transparent),
+    0 0 40px -14px color-mix(in srgb, var(--color-accent) 45%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
   --shadow-card-selected:
     0 26px 56px rgba(2, 6, 18, 0.55),
     0 0 0 1px color-mix(in srgb, var(--card-c) 55%, transparent),
     0 0 30px -4px color-mix(in srgb, var(--card-c) 70%, transparent),
     0 0 70px -12px color-mix(in srgb, var(--color-accent) 55%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    inset 0 1px 0 rgba(255, 255, 255, 0.20);
 
   /* —— 过渡 —— */
   --ease-out:    cubic-bezier(0.4, 0, 0.2, 1);
@@ -136,6 +148,21 @@ input, textarea, select { user-select: text; }
   vertical-align: -3px;
 }
 .btn .ico, .ai-btn .ico, .icon-btn .ico { pointer-events: none; }
+
+/* ---------- 键盘焦点可见性（仅键盘导航时显示焦点环，鼠标点击不显示） ---------- */
+.pcard:focus,
+.rail-icon:focus,
+.rail-action:focus,
+.deck-nav:focus,
+.pcard-corner-btn:focus { outline: none; }
+.pcard:focus-visible { outline: none; box-shadow: var(--focus-ring), var(--shadow-card); }
+.rail-icon:focus-visible,
+.rail-action:focus-visible,
+.deck-nav:focus-visible,
+.pcard-corner-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
 
 /* ============================ 顶部栏 ============================ */
 
@@ -660,7 +687,7 @@ input, textarea, select { user-select: text; }
   height: 500px;
   max-width: 1500px;
   perspective: 1500px;
-  transition: transform 0.3s var(--ease-out);
+  transition: transform 0.5s var(--ease-spring);
   user-select: none;
   -webkit-user-select: none;
 }
@@ -679,13 +706,13 @@ input, textarea, select { user-select: text; }
   z-index: 5;
   max-width: calc(100% - 32px);
   font-size: 12px;
-  color: var(--text-2);
+  color: var(--text-1);
   letter-spacing: 0.4px;
   text-align: center;
   white-space: normal;
   line-height: 1.6;
-  opacity: 1;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+  opacity: 0.92;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
   pointer-events: none;
 }
 
@@ -746,13 +773,13 @@ input, textarea, select { user-select: text; }
   margin-left: calc(var(--card-w) / -2);
   margin-top: calc(var(--card-h) / -2);
 
-  /* 玻璃拟态：半透明渐变 + 顶部柔光 + 背景模糊 */
+  /* 通透玻璃：顶部柔高光 + 冷调蓝灰渐变（提高不透明度减少透出）+ 背景模糊 */
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0.03) 26%, transparent 42%),
-    linear-gradient(158deg, rgba(32, 40, 64, 0.58) 0%, rgba(15, 21, 38, 0.72) 100%);
-  backdrop-filter: blur(18px) saturate(1.25);
-  -webkit-backdrop-filter: blur(18px) saturate(1.25);
-  border: 1px solid rgba(255, 255, 255, 0.13);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.04) 26%, transparent 44%),
+    linear-gradient(158deg, rgba(30, 40, 66, 0.80) 0%, rgba(12, 18, 34, 0.90) 100%);
+  backdrop-filter: blur(18px) saturate(1.32);
+  -webkit-backdrop-filter: blur(18px) saturate(1.32);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: var(--r-card);
   box-shadow: var(--shadow-card);
 
@@ -766,15 +793,19 @@ input, textarea, select { user-select: text; }
     transform var(--trans-dur, 0.55s) cubic-bezier(0.16, 1, 0.3, 1),
     box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1),
     border-color 0.3s var(--ease-out),
-    opacity 0.4s ease;
+    opacity 0.4s ease,
+    filter 0.28s var(--ease-out);
 
   /* 由 inline style 设 --offsetX 等决定水平偏移 / 透视微旋 / 缩放（左右牌正向排列 + 一点透视） */
+  /* 末尾 --tiltX/--tiltY 为跟随光标的 3D 倾斜（hover 时由 JS 设置，静止归零） */
   transform:
     perspective(1100px)
     translateX(calc(var(--offsetX, 0px)))
-    translateY(calc(var(--offY, 0px)))
-    scale(calc(var(--scale, 1)))
-    rotateY(calc(var(--rot, 0deg)));
+    translateY(calc(var(--offY, 0px) + var(--hoverY, 0px) + var(--enterY, 0px)))
+    scale(calc(var(--scale, 1) * var(--hoverScale, 1)))
+    rotateY(calc(var(--rot, 0deg)))
+    rotateX(var(--tiltX, 0deg))
+    rotateY(var(--tiltY, 0deg));
   transform-origin: 50% 60%;
   z-index: var(--zi, 1);
   /* 阴影随层级变化：主卡阴影大而深，远卡阴影小而淡 */
@@ -783,17 +814,42 @@ input, textarea, select { user-select: text; }
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
-/* 顶部渐变装饰条 —— 类目色（细、通透） */
+/* hover 时把 transform 过渡调快，让 3D 倾斜跟手；离开后回落沿用较慢缓动 */
+.pcard:hover {
+  transition:
+    transform 0.12s ease-out,
+    box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.3s var(--ease-out),
+    opacity 0.4s ease,
+    filter 0.28s var(--ease-out);
+}
+
+/* 跟随光标的高光扫过层 */
+.pcard-glare {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 6;
+  opacity: 0;
+  transition: opacity 0.3s var(--ease-out);
+  background: radial-gradient(260px circle at var(--gx, 50%) var(--gy, 50%),
+    rgba(255, 255, 255, 0.30) 0%, rgba(180, 214, 255, 0.10) 34%, transparent 62%);
+  mix-blend-mode: overlay;
+}
+.pcard:hover .pcard-glare { opacity: 1; }
+
+/* 顶部装饰条 —— 类目色（细、通透） */
 .pcard::before {
   content: '';
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 5px;
   background: linear-gradient(90deg,
-    var(--card-c),
-    color-mix(in srgb, var(--card-c) 40%, transparent) 68%,
+    color-mix(in srgb, var(--card-c) 90%, white),
+    color-mix(in srgb, var(--card-c) 45%, transparent) 68%,
     transparent);
-  opacity: 0.9;
+  opacity: 0.92;
   z-index: 4;
 }
 
@@ -863,6 +919,7 @@ input, textarea, select { user-select: text; }
   cursor: pointer;
   font-family: inherit;
   padding: 0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.09), 0 2px 8px -4px rgba(2, 6, 18, 0.6);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   transition: all 0.18s var(--ease-out);
@@ -969,14 +1026,16 @@ input, textarea, select { user-select: text; }
 .pcard-type {
   display: inline-flex;
   align-items: center;
+  gap: 6px;
   align-self: flex-start;
-  padding: 3px 12px;
+  padding: 3px 11px;
   font-size: 10.5px;
   font-weight: 600;
   letter-spacing: 0.6px;
   color: color-mix(in srgb, var(--card-c) 85%, white);
   background: color-mix(in srgb, var(--card-c) 13%, transparent);
-  border: 1px solid color-mix(in srgb, var(--card-c) 32%, transparent);
+  border: 1px solid color-mix(in srgb, var(--card-c) 26%, transparent);
+  box-shadow: inset 0 0 12px -6px color-mix(in srgb, var(--card-c) 60%, transparent);
   border-radius: var(--r-pill);
   max-width: 100%;
   overflow: hidden;
@@ -985,8 +1044,17 @@ input, textarea, select { user-select: text; }
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
 }
+.pcard-type::before {
+  content: '';
+  flex: 0 0 auto;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 6px color-mix(in srgb, var(--card-c) 70%, transparent);
+}
 
-/* 标题：放大加粗，形成第一层级（窄卡适配） */
+/* 标题：放大加粗，第一层级（冷玻璃实色） */
 .pcard-title {
   font-size: 20px;
   font-weight: 700;
@@ -1014,20 +1082,25 @@ input, textarea, select { user-select: text; }
   -webkit-backdrop-filter: blur(3px);
   z-index: 3;
 }
+.pcard-foot::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 26px; right: 26px; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
+}
 
-/* 正文预览：细字、灰、留白充足，最多 4 行（窄卡适配） */
+/* 正文预览：固定 4 行、底部渐隐遮罩代替硬省略号，留白统一 */
 .pcard-preview {
   font-size: 12px;
   font-weight: 400;
   line-height: 1.7;
   color: var(--text-2);
-  display: -webkit-box;
-  -webkit-line-clamp: 4;
-  -webkit-box-orient: vertical;
+  height: calc(12px * 1.7 * 4);
   overflow: hidden;
   word-break: break-word;
   margin-bottom: 13px;
-  min-height: 4.2em;
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 1.2em), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 1.2em), transparent);
 }
 
 .pcard-status {
@@ -1072,10 +1145,9 @@ input, textarea, select { user-select: text; }
    状态变化
    ============================================================ */
 
-/* 未选态 —— 轻微下沉、适度灰化（保可读，不过度压暗） */
+/* 未选态 —— 轻微下沉、适度灰化（灰化移到位置感知规则，避免与侧卡模糊冲突） */
 .pcard.excluded {
   border-color: rgba(255, 255, 255, 0.07);
-  filter: saturate(0.82) brightness(0.95);
   box-shadow:
     0 12px 26px rgba(2, 6, 18, 0.38),
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
@@ -1099,6 +1171,10 @@ input, textarea, select { user-select: text; }
   color: var(--text-2);
   text-shadow: none;
 }
+
+/* 位置态滤镜：主卡未选=轻灰化；侧卡=模糊退后为柔和背景 */
+.pcard.is-primary.excluded { filter: saturate(0.82) brightness(0.95); }
+.pcard.is-side { filter: blur(1.6px) saturate(0.72) brightness(0.86); }
 
 /* Hover 态（焦点/未选）—— 浮起 + 类目色微光 */
 .pcard:not(.excluded):not(.selected):hover {
@@ -1132,6 +1208,26 @@ input, textarea, select { user-select: text; }
 
 /* 点击态（按下瞬间） */
 .pcard:active { transition: transform 0.12s ease; }
+
+/* 悬停/键盘聚焦时提亮未选卡，改善侧卡可读性 */
+.pcard.excluded:hover { filter: saturate(0.95) brightness(1.06); }
+.pcard.excluded:focus-visible { filter: saturate(0.95) brightness(1.06); }
+/* 侧卡悬停/聚焦时锐化回清晰 + 轻微抬起靠近焦点，暗示可点进来 */
+.pcard.is-side:hover {
+  --hoverScale: 1.06;
+  --hoverY: -16px;
+  filter: blur(0.3px) saturate(0.95) brightness(1.02);
+  box-shadow: 0 26px 52px rgba(2, 6, 18, 0.55), 0 0 24px -6px color-mix(in srgb, var(--card-c) 45%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+.pcard.is-side:focus-visible {
+  --hoverScale: 1.06;
+  --hoverY: -16px;
+  filter: blur(0.3px) saturate(0.95) brightness(1.02);
+}
+
+/* 类目切换扇入：卡牌依次上升淡入（to 取各卡自然透明度） */
+@keyframes cardFanIn { from { opacity: 0; --enterY: 26px; } }
+.pcard.entering { animation: cardFanIn 0.5s var(--ease-out) both; transition: none; }
 
 /* 切换时短暂脉冲（轻微 radial 闪光） */
 @keyframes pcardPulse {
@@ -1231,6 +1327,34 @@ input, textarea, select { user-select: text; }
 
 .btn:hover { background: var(--bg-hover); border-color: var(--accent-primary); box-shadow: 0 0 12px -3px var(--accent-primary); transform: translateY(-1px); }
 .btn:active { transform: scale(0.97); }
+
+/* 点击涟漪（微交互反馈） */
+.btn, .ai-btn, .icon-btn { position: relative; overflow: hidden; }
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  transform: scale(0);
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.32) 0%, rgba(56, 189, 248, 0.16) 55%, transparent 72%);
+  animation: rippleAnim 0.6s ease-out forwards;
+  z-index: 0;
+}
+@keyframes rippleAnim { to { transform: scale(2.8); opacity: 0; } }
+
+/* 按钮成功反馈态（复制/保存后短暂morph） */
+.btn.is-success, .btn.is-success:hover {
+  color: var(--success);
+  border-color: color-mix(in srgb, var(--success) 55%, transparent);
+  box-shadow: 0 0 14px -4px var(--success);
+  transform: none;
+}
+.btn.is-success .ico { color: var(--success); }
+.btn.primary.is-success, .btn.primary.is-success:hover {
+  background: linear-gradient(135deg, var(--success), color-mix(in srgb, var(--success) 68%, white));
+  color: #06231a;
+  box-shadow: 0 0 18px -4px var(--success);
+}
+.btn.primary.is-success .ico { color: #06231a; }
 
 .btn.small { padding: 5px 11px; font-size: 12px; }
 .btn.ghost { background: transparent; }
@@ -2066,6 +2190,9 @@ select option { background: var(--bg-tertiary); color: var(--text-primary); }
   bottom: 70px;
   transform: translateX(-50%);
   z-index: 200;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   padding: 9px 20px;
   font-size: 13px;
   color: var(--text-primary);
@@ -2076,12 +2203,17 @@ select option { background: var(--bg-tertiary); color: var(--text-primary); }
   border-left: 3px solid var(--accent-secondary);
   border-radius: 10px;
   box-shadow: 0 8px 30px rgba(2, 6, 18, 0.5);
-  transition: all 0.2s ease;
+  transition: opacity 0.24s ease, transform 0.36s var(--ease-spring);
   max-width: 70vw;
 }
-
+.toast .ico { width: 15px; height: 15px; flex: 0 0 auto; }
+.toast.success { border-left-color: var(--success); }
+.toast.success .ico { color: var(--success); }
 .toast.error { border-left-color: var(--danger); }
-.toast.hidden { opacity: 0; transform: translateX(-50%) translateY(8px); pointer-events: none; }
+.toast.error .ico { color: var(--danger); }
+.toast.info { border-left-color: var(--color-primary); }
+.toast.info .ico { color: var(--color-primary); }
+.toast.hidden { opacity: 0; transform: translateX(-50%) translateY(16px) scale(0.96); pointer-events: none; }
 
 /* ============================ 视图切换（卡牌视图 / 情节视图） ============================ */
 
@@ -2092,8 +2224,14 @@ select option { background: var(--bg-tertiary); color: var(--text-primary); }
   flex-direction: column;
   position: relative;
   z-index: 2;
+  animation: viewEnter 0.34s var(--ease-out) both;
 }
 .view.hidden { display: none; }
+
+@keyframes viewEnter {
+  from { opacity: 0; transform: translateY(10px) scale(0.994); }
+  to   { opacity: 1; transform: none; }
+}
 
 /* ---------- 情节梗概视图（独立内容输入） ---------- */
 
@@ -2360,6 +2498,15 @@ select option { background: var(--bg-tertiary); color: var(--text-primary); }
   overflow: hidden;
 }
 
+/* 视差分层：远层星云(位移小)、近层秋叶(位移大)，由 JS 跟随光标设 transform */
+.bg-far, .bg-near {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  will-change: transform;
+  transition: transform 0.25s ease-out;
+}
+
 /* ---------- 星云光斑：大尺寸径向渐变 + 高斯模糊，缓慢漂移 ---------- */
 .bg-ambient .aurora {
   position: absolute;
@@ -2445,4 +2592,9 @@ select option { background: var(--bg-tertiary); color: var(--text-primary); }
 @media (prefers-reduced-motion: reduce) {
   .bg-ambient .leaf { animation: none; opacity: 0; }
   .bg-ambient .aurora { animation: none; }
+  .pcard-glare { display: none; }
+  .pcard { --tiltX: 0deg; --tiltY: 0deg; }
+  .pcard.entering { animation: none; }
+  .view { animation: none; }
+  .bg-far, .bg-near { transform: none !important; }
 }

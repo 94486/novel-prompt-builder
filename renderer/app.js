@@ -71,6 +71,8 @@ const ICON_PATH = {
   plug: '<path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8z"/>',
   check: '<polyline points="20 6 9 17 4 12"/>',
   circle: '<circle cx="12" cy="12" r="9"/>',
+  alert: '<circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>',
+  info: '<circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16"/><line x1="12" y1="8" x2="12.01" y2="8"/>',
   grip: '<circle cx="9" cy="5.5" r="1.1"/><circle cx="15" cy="5.5" r="1.1"/><circle cx="9" cy="12" r="1.1"/><circle cx="15" cy="12" r="1.1"/><circle cx="9" cy="18.5" r="1.1"/><circle cx="15" cy="18.5" r="1.1"/>',
   chevronUp: '<polyline points="18 15 12 9 6 15"/>',
   chevronDown: '<polyline points="6 9 12 15 18 9"/>',
@@ -789,7 +791,8 @@ function renderRail() {
     // 仅在卡牌视图下，类目图标才显示激活态；情节视图下类目全部置为非激活
     const active = (state.view === 'cards' && state.activeCategory === c.key) ? 'active' : '';
     const hasSel = m.selected > 0 ? 'has-selected' : '';
-    return `<button class="rail-icon ${c.key} ${active} ${hasSel}" data-cat="${c.key}">
+    return `<button class="rail-icon ${c.key} ${active} ${hasSel}" data-cat="${c.key}"
+      aria-pressed="${active ? 'true' : 'false'}" aria-label="${c.label}，共 ${m.total} 张，已选 ${m.selected} 张">
       <span class="rail-icon-ico">${ico(c.icon)}</span>
       <span class="rail-icon-label">${c.label}</span>
       <span class="rail-icon-count" title="共 ${m.total} 张卡牌">${m.total}</span>
@@ -801,6 +804,7 @@ function renderRail() {
     const filled = !!String((state.project.plot && state.project.plot.content) || '').trim();
     synopsisBtn.classList.toggle('has-content', filled);
     synopsisBtn.classList.toggle('active', state.view === 'synopsis');
+    synopsisBtn.setAttribute('aria-pressed', state.view === 'synopsis' ? 'true' : 'false');
   }
 
   const chaptersBtn = $('#btn-chapters');
@@ -810,6 +814,7 @@ function renderRail() {
     if (counter) counter.textContent = String(cnt);
     chaptersBtn.classList.toggle('has-content', cnt > 0);
     chaptersBtn.classList.toggle('active', state.view === 'chapters');
+    chaptersBtn.setAttribute('aria-pressed', state.view === 'chapters' ? 'true' : 'false');
   }
 }
 
@@ -820,6 +825,7 @@ function switchToCards(categoryKey) {
   state.activeCategory = categoryKey;
   state.deckIndex = 0; // 切换类目时回到第一张
   state.view = 'cards';
+  state._fanIn = true; // 触发卡牌扇入
   renderRail();
   renderCardView();
   $('#card-view').classList.remove('hidden');
@@ -873,6 +879,7 @@ async function saveChapter() {
   renderRail();
   afterDataChanged();
   showToast('已保存章节「' + chapter.name + '」，共 ' + chapter.tokens + ' Token', 'success');
+  flashSuccess($('#btn-preview-save-chapter'), '已保存');
 }
 
 function renderChaptersView() {
@@ -1118,14 +1125,14 @@ async function deleteChapter(id) {
  */
 
 // 手牌式层叠布局（可调到 4~5 张同时呈现）
-// 卡片 276×390：主卡对中心距 250px（重叠仅 26px，内容几乎全可见）；
-// 次级卡逐级外移 170px（第 1 层轻层叠，第 2 层起完全独立可读）
-const PAIR_HALF = 125;     // 两张主卡中心距的一半（主卡对居中并排）
-const CARD_GAP = 170;      // 次级卡与主卡之间的横向错位距离（px）
+// 卡片 276×390：主卡对中心距 280px（几乎不重叠，内容全可见）；
+// 次级卡逐级外移 196px（重叠更小，侧卡再靠模糊/降透明退到背景）
+const PAIR_HALF = 140;     // 两张主卡中心距的一半（主卡对居中并排）
+const CARD_GAP = 196;      // 次级卡与主卡之间的横向错位距离（px）
 
-/** 每侧可见次级卡数：窄窗降级为 1 张，避免侧卡溢出窗口 */
+/** 每侧可见次级卡数：窗口不够宽时降级为 1 张，避免侧卡溢出/被裁 */
 function sideVisible() {
-  return window.innerWidth < 900 ? 1 : 2;
+  return window.innerWidth < 1180 ? 1 : 2;
 }
 
 /**
@@ -1141,7 +1148,7 @@ function cardLayout(category, idx, focus, cards) {
 
   // 双主卡布局：offset 0/1 = 并列主卡；其余 = 左右次级卡（正向排列 + 透视微旋）
   const sv = sideVisible();
-  let offsetX = 0, rot = 0, scale = 1, offY = 0, zi = 1, opacity = 1;
+  let offsetX = 0, rot = 0, scale = 1, offY = 0, zi = 1, opacity = 1, isPrimary = false;
   let transDur = 0.55, shadowY = 18, shadowBlur = 40, shadowAlpha = 0.45;
 
   if (offset === 0) {
@@ -1150,6 +1157,7 @@ function cardLayout(category, idx, focus, cards) {
     offY = -12;
     scale = 1.06;
     zi = 30;
+    isPrimary = true;
     transDur = 0.58; shadowY = 26; shadowBlur = 56; shadowAlpha = 0.55;
   } else if (offset === 1) {
     // 右主卡：居中偏右（与左主卡并列）
@@ -1157,6 +1165,7 @@ function cardLayout(category, idx, focus, cards) {
     offY = -12;
     scale = 1.06;
     zi = 30;
+    isPrimary = true;
     transDur = 0.58; shadowY = 26; shadowBlur = 56; shadowAlpha = 0.55;
   } else {
     // 次级卡：相对主卡对的左右错位 + 面向中心的透视微旋（轻 3D 纵深）
@@ -1168,6 +1177,7 @@ function cardLayout(category, idx, focus, cards) {
       offY = 8 * dist;
       scale = 1 - 0.05 * dist;
       zi = 30 - dist * 4;
+      opacity = dist === 1 ? 0.82 : 0.6;   // 侧卡逐级降透明，退到背景不抢文字
       // 视差：近侧卡略慢，远侧卡略快，产生深度层次感
       transDur = 0.55 - 0.05 * dist;
       shadowY = 18 - 4 * dist;
@@ -1183,7 +1193,7 @@ function cardLayout(category, idx, focus, cards) {
       transDur = 0.45; shadowY = 8; shadowBlur = 20; shadowAlpha = 0.2;
     }
   }
-  return { offsetX, rot, scale, offY, zi, opacity, transDur, shadowY, shadowBlur, shadowAlpha };
+  return { offsetX, rot, scale, offY, zi, opacity, isPrimary, transDur, shadowY, shadowBlur, shadowAlpha };
 }
 
 /** 把布局变量写入已存在的卡牌元素（触发 CSS transition 真实移位） */
@@ -1199,6 +1209,8 @@ function applyCardLayout(el, category, idx, focus, cards) {
   el.style.setProperty('--shadow-blur', lay.shadowBlur + 'px');
   el.style.setProperty('--shadow-alpha', String(lay.shadowAlpha));
   el.style.opacity = String(lay.opacity);
+  el.classList.toggle('is-primary', !!lay.isPrimary);
+  el.classList.toggle('is-side', !lay.isPrimary);
 }
 
 /** 同步卡牌底部「已选中/未选」徽标（DOM 复用时 class 切换不会自动更新文字） */
@@ -1212,6 +1224,9 @@ function syncCardBadge(el, selected) {
     badge.className = 'pcard-badge off';
     badge.innerHTML = ico('circle') + ' 未选';
   }
+  el.setAttribute('aria-pressed', selected ? 'true' : 'false');
+  const label = (el.getAttribute('aria-label') || '').replace(/(已选中|未选)/, selected ? '已选中' : '未选');
+  el.setAttribute('aria-label', label);
 }
 
 function renderCardView() {
@@ -1277,6 +1292,25 @@ function renderCardView() {
     }
   }
 
+  // 类目切换：卡牌扇入（一次性，可见卡按序错开入场）
+  if (state._fanIn) {
+    state._fanIn = false;
+    let k = 0;
+    deck.querySelectorAll('.pcard').forEach((el) => {
+      if (parseFloat(el.style.opacity || '1') < 0.05) return; // 离屏缓冲卡不参与
+      el.classList.add('entering');
+      el.style.animationDelay = (k * 55) + 'ms';
+      k++;
+    });
+    clearTimeout(state._fanInTimer);
+    state._fanInTimer = setTimeout(() => {
+      deck.querySelectorAll('.pcard.entering').forEach((el) => {
+        el.classList.remove('entering');
+        el.style.animationDelay = '';
+      });
+    }, 900);
+  }
+
   // 循环模式下翻页按钮始终可用
   if (prevBtn) prevBtn.disabled = false;
   if (nextBtn) nextBtn.disabled = false;
@@ -1331,14 +1365,18 @@ function pcardHTML(category, card, idx, focus, cards) {
     ? `<img class="gender-img" src="${avatarImg(card.avatar || defaultAvatar(card.gender))}" alt="" draggable="false" loading="lazy">`
     : ico(cat.icon);
 
-  return `<div class="pcard ${category} ${stateClass}" data-id="${esc(card.id)}" data-idx="${idx}"
+  const ariaLabel = `${card.name || '未命名'}，${cornerLabel}，${card.selected ? '已选中' : '未选'}。回车编辑，空格切换选中`;
+
+  return `<div class="pcard ${category} ${stateClass} ${lay.isPrimary ? 'is-primary' : 'is-side'}" data-id="${esc(card.id)}" data-idx="${idx}"
+    role="button" tabindex="0" aria-pressed="${card.selected ? 'true' : 'false'}" aria-label="${esc(ariaLabel)}"
     style="--offsetX:${offsetX}px;--rot:${rot}deg;--scale:${scale};--offY:${offY}px;--zi:${zi};--trans-dur:${transDur}s;--shadow-y:${shadowY}px;--shadow-blur:${shadowBlur}px;--shadow-alpha:${shadowAlpha};opacity:${opacity}">
     <div class="pcard-corner">
       <span class="pcard-corner-icon">${ico(cat.icon)}</span>
       <span class="pcard-corner-label">${esc(cornerLabel)}</span>
     </div>
     <div class="pcard-corner-actions">
-      <button class="pcard-corner-btn danger" data-del title="删除">${ico('trash')}</button>
+      <button class="pcard-corner-btn" data-edit tabindex="-1" title="编辑卡牌" aria-label="编辑卡牌">${ico('edit')}</button>
+      <button class="pcard-corner-btn danger" data-del tabindex="-1" title="删除卡牌" aria-label="删除卡牌">${ico('trash')}</button>
     </div>
     <div class="pcard-art${artCls}">${artHtml}</div>
     <div class="pcard-info">
@@ -1354,6 +1392,7 @@ function pcardHTML(category, card, idx, focus, cards) {
         <span class="pcard-counter">${esc(counterText)}</span>
       </div>
     </div>
+    <span class="pcard-glare" aria-hidden="true"></span>
   </div>`;
 }
 
@@ -1362,13 +1401,50 @@ function pcardHTML(category, card, idx, focus, cards) {
  * 不再需要 extract 多个小函数，保持逻辑内聚且未来字段增删只需改 pcardHTML 一处。
  */
 
+/* 数字滚动微交互：把元素数值文本缓动到目标值 */
+const _numTweens = new WeakMap();
+const _reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)');
+function tweenNumber(el, to, format) {
+  if (!el) return;
+  const fmt = format || ((n) => String(n));
+  const prev = _numTweens.get(el);
+  if (prev && prev.raf) cancelAnimationFrame(prev.raf);
+  const from = prev && typeof prev.value === 'number'
+    ? prev.value
+    : (parseInt(String(el.textContent).replace(/\D/g, ''), 10) || 0);
+  if (_reduceMotion && _reduceMotion.matches) {
+    el.textContent = fmt(to);
+    _numTweens.set(el, { value: to, raf: 0 });
+    return;
+  }
+  if (from === to) {
+    el.textContent = fmt(to);
+    _numTweens.set(el, { value: to, raf: 0 });
+    return;
+  }
+  const dur = 380, t0 = performance.now();
+  const st = { value: from, raf: 0 };
+  _numTweens.set(el, st);
+  const step = (now) => {
+    const p = Math.min(1, (now - t0) / dur);
+    const eased = 1 - Math.pow(1 - p, 3);
+    st.value = Math.round(from + (to - from) * eased);
+    el.textContent = fmt(st.value);
+    if (p < 1) st.raf = requestAnimationFrame(step);
+    else { st.value = to; st.raf = 0; el.textContent = fmt(to); }
+  };
+  st.raf = requestAnimationFrame(step);
+}
+
 function renderBottomBar() {
   const all = CATEGORIES.flatMap((c) => pool(c.key) || []);
   const sel = all.filter((x) => x.selected).length;
-  $('#selected-count').textContent = sel;
+  tweenNumber($('#selected-count'), sel, (n) => String(n));
   const text = PromptBuilder.buildPrompt(buildPromptView());
   const tokens = PromptBuilder.estimateTokens(text);
-  $('#token-count').textContent = '预估 Token：' + (text ? tokens : '—');
+  const tokEl = $('#token-count');
+  if (text) tweenNumber(tokEl, tokens, (n) => '预估 Token：' + n);
+  else { tokEl.textContent = '预估 Token：—'; _numTweens.set(tokEl, { value: 0, raf: 0 }); }
   state.previewText = text;
 }
 
@@ -1398,7 +1474,13 @@ function onCardListMouseDown(e) {
   const id = card.dataset.id;
   const idx = parseInt(card.dataset.idx, 10);
 
-  // 删除按钮优先（编辑改由卡牌上方三分之一点击进入）
+  // 角标按钮优先（编辑也可点卡牌上三分之一；删除也可）
+  if (e.target.closest('[data-edit]')) {
+    e.preventDefault();
+    e.stopPropagation();
+    openCardEdit(id);
+    return;
+  }
   if (e.target.closest('[data-del]')) {
     e.preventDefault();
     e.stopPropagation();
@@ -1408,6 +1490,26 @@ function onCardListMouseDown(e) {
 
   e.preventDefault();
   startDeckGesture(card, id, idx, e);
+}
+
+/** 卡牌键盘激活：回车=编辑，空格=切换选中，Delete/Backspace=删除 */
+function onCardDeckKeyDown(e) {
+  const card = e.target.closest && e.target.closest('.pcard');
+  if (!card) return;
+  const id = card.dataset.id;
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    openCardEdit(id);
+  } else if (e.key === ' ' || e.key === 'Spacebar') {
+    e.preventDefault();
+    e.stopPropagation(); // 阻止 window 全局空格处理，避免重复切换
+    toggleSelected(state.activeCategory, id);
+    afterDataChanged();
+    pulseCard(id);
+  } else if (e.key === 'Delete' || e.key === 'Backspace') {
+    e.preventDefault();
+    deleteCard(id);
+  }
 }
 
 /**
@@ -1422,6 +1524,7 @@ function startDeckGesture(cardEl, cardId, idx, startEvent) {
   const startY = startEvent.clientY;
   const deck = $('#card-deck');
   let dxTotal = 0, dyTotal = 0, dragging = false;
+  let lastX = startX, lastT = startEvent.timeStamp || performance.now(), vx = 0;
 
   function onMove(ev) {
     const dx = ev.clientX - startX;
@@ -1433,7 +1536,18 @@ function startDeckGesture(cardEl, cardId, idx, startEvent) {
       deck.classList.add('gesturing');
     }
     if (dragging) {
-      const t = Math.max(-90, Math.min(90, dx)) * 0.45;
+      // 速度采样（px/ms，指数平滑）用于松手甩动判定
+      const now = ev.timeStamp || performance.now();
+      const dt = now - lastT;
+      if (dt > 0) {
+        const inst = (ev.clientX - lastX) / dt;
+        vx = vx * 0.7 + inst * 0.3;
+        lastX = ev.clientX; lastT = now;
+      }
+      // 橡皮筋式跟手：线性跟随、超出后阻尼收敛，最大约 ±120px
+      const raw = dx * 0.5;
+      const cap = 120;
+      const t = raw > cap ? cap + (raw - cap) * 0.25 : raw < -cap ? -cap + (raw + cap) * 0.25 : raw;
       deck.style.transform = `translateX(${t}px)`;
     }
   }
@@ -1445,8 +1559,14 @@ function startDeckGesture(cardEl, cardId, idx, startEvent) {
     deck.style.transform = '';
 
     if (dragging) {
-      if (dxTotal <= -55) deckShift(1);
-      else if (dxTotal >= 55) deckShift(-1);
+      // 惯性甩动：位移阈值 + 速度共同决定翻页张数
+      const fast = Math.abs(vx) > 0.5;
+      const veryFast = Math.abs(vx) > 1.1;
+      const past = dxTotal <= -55 || dxTotal >= 55;
+      let shift = 0;
+      if (past || fast) shift = (dxTotal < 0 || vx < 0) ? 1 : -1;
+      if (shift !== 0 && (veryFast || Math.abs(dxTotal) > 220)) shift *= 2;
+      if (shift !== 0) deckShift(shift);
       return;
     }
 
@@ -2489,6 +2609,19 @@ function closePreview() {
   $('#preview-modal').classList.add('hidden');
 }
 
+function flashSuccess(btn, label) {
+  if (!btn || btn.dataset.flashing) return;
+  btn.dataset.flashing = '1';
+  const orig = btn.innerHTML;
+  btn.classList.add('is-success');
+  btn.innerHTML = ico('check') + '<span>' + esc(label || '已复制') + '</span>';
+  setTimeout(() => {
+    btn.innerHTML = orig;
+    btn.classList.remove('is-success');
+    delete btn.dataset.flashing;
+  }, 1500);
+}
+
 function copyPrompt() {
   const text = state.previewText || '';
   if (!text) {
@@ -2497,6 +2630,7 @@ function copyPrompt() {
   }
   copyText(text);
   showToast('已复制到剪贴板', 'success');
+  flashSuccess($('#btn-copy'), '已复制');
 }
 
 function highlightPrompt(text) {
@@ -2675,11 +2809,13 @@ let toastTimer = null;
 
 function showToast(msg, type) {
   const el = $('#toast');
-  el.textContent = msg;
-  el.className = 'toast' + (type === 'error' ? ' error' : '');
+  const t = type === 'error' ? 'error' : type === 'info' ? 'info' : 'success';
+  const icon = t === 'error' ? 'alert' : t === 'info' ? 'info' : 'check';
+  el.className = 'toast ' + t;
+  el.innerHTML = ico(icon) + '<span>' + esc(String(msg)) + '</span>';
   el.classList.remove('hidden');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.add('hidden'), 2000);
+  toastTimer = setTimeout(() => el.classList.add('hidden'), 2200);
 }
 
 function confirmDialog(title, message, danger) {
@@ -2999,6 +3135,92 @@ function bindEvents() {
 
   // 卡牌堆：mousedown 同时处理点击（上/下半区）与左右拨动
   $('#card-deck').addEventListener('mousedown', onCardListMouseDown);
+  // 卡牌键盘激活（回车编辑 / 空格选中 / Delete 删除）
+  $('#card-deck').addEventListener('keydown', onCardDeckKeyDown);
+
+  // 卡牌 3D 倾斜 + 高光跟随光标（尊重系统「减少动效」偏好）
+  (function initCardTilt() {
+    const deckEl = $('#card-deck');
+    if (!deckEl) return;
+    const mq = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)');
+    const MAX_TILT = 9;
+    let raf = null, target = null, lastEv = null;
+    const reset = (el) => {
+      if (!el) return;
+      el.style.setProperty('--tiltX', '0deg');
+      el.style.setProperty('--tiltY', '0deg');
+      el.style.setProperty('--gx', '50%');
+      el.style.setProperty('--gy', '50%');
+    };
+    const apply = () => {
+      raf = null;
+      const el = target, ev = lastEv;
+      if (!el || !ev) return;
+      const r = el.getBoundingClientRect();
+      if (!r.width || !r.height) return;
+      const px = (ev.clientX - r.left) / r.width;   // 0..1
+      const py = (ev.clientY - r.top) / r.height;   // 0..1
+      el.style.setProperty('--tiltY', ((px - 0.5) * 2 * MAX_TILT).toFixed(2) + 'deg');
+      el.style.setProperty('--tiltX', (-(py - 0.5) * 2 * MAX_TILT).toFixed(2) + 'deg');
+      el.style.setProperty('--gx', (px * 100).toFixed(1) + '%');
+      el.style.setProperty('--gy', (py * 100).toFixed(1) + '%');
+    };
+    deckEl.addEventListener('mousemove', (e) => {
+      if (mq && mq.matches) return;
+      const card = e.target.closest('.pcard');
+      if (!card) { if (target) { reset(target); target = null; } return; }
+      if (target && target !== card) reset(target);
+      target = card; lastEv = e;
+      if (!raf) raf = requestAnimationFrame(apply);
+    });
+    deckEl.addEventListener('mouseleave', () => { reset(target); target = null; });
+  })();
+
+  // 背景氛围随指针视差（远层星云位移小、近层秋叶位移大，形成纵深）
+  (function initBgParallax() {
+    const main = document.getElementById('main');
+    const far = document.querySelector('.bg-far');
+    const near = document.querySelector('.bg-near');
+    if (!main || !far || !near) return;
+    const mq = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)');
+    let raf = null, ev = null;
+    const apply = () => {
+      raf = null;
+      if (!ev) return;
+      const r = main.getBoundingClientRect();
+      if (!r.width || !r.height) return;
+      const nx = (ev.clientX - r.left) / r.width - 0.5;   // -0.5..0.5
+      const ny = (ev.clientY - r.top) / r.height - 0.5;
+      far.style.transform  = `translate3d(${(nx * -16).toFixed(1)}px, ${(ny * -12).toFixed(1)}px, 0)`;
+      near.style.transform = `translate3d(${(nx * -34).toFixed(1)}px, ${(ny * -26).toFixed(1)}px, 0)`;
+    };
+    main.addEventListener('mousemove', (e) => {
+      if (mq && mq.matches) return;
+      ev = e;
+      if (!raf) raf = requestAnimationFrame(apply);
+    });
+    main.addEventListener('mouseleave', () => {
+      far.style.transform = '';
+      near.style.transform = '';
+    });
+  })();
+
+  // 按钮点击涟漪（微交互反馈）
+  (function initRipple() {
+    document.addEventListener('pointerdown', (e) => {
+      const btn = e.target.closest && e.target.closest('.btn, .ai-btn, .icon-btn');
+      if (!btn) return;
+      const r = btn.getBoundingClientRect();
+      const size = Math.max(r.width, r.height);
+      const span = document.createElement('span');
+      span.className = 'ripple';
+      span.style.width = span.style.height = size + 'px';
+      span.style.left = (e.clientX - r.left - size / 2) + 'px';
+      span.style.top = (e.clientY - r.top - size / 2) + 'px';
+      btn.appendChild(span);
+      span.addEventListener('animationend', () => span.remove());
+    });
+  })();
 
   // 卡牌翻页
   $('#btn-deck-prev').addEventListener('click', () => deckShift(-1));
@@ -3066,6 +3288,7 @@ function bindEvents() {
     const text = state.previewText || '';
     if (!text) { showToast('暂无可复制的 Prompt', 'error'); return; }
     copyText(text); showToast('已复制到剪贴板', 'success');
+    flashSuccess($('#btn-preview-copy'), '已复制');
   });
   const previewSaveCh = $('#btn-preview-save-chapter');
   if (previewSaveCh) previewSaveCh.addEventListener('click', saveChapter);
