@@ -1,7 +1,7 @@
 'use strict';
 /* 验收单测：数据迁移 normalizeData（从 renderer/app.js 源码提取纯函数，浏览器无关） */
 const fs = require('fs');
-const src = fs.readFileSync(__dirname + '/renderer/app.js', 'utf8');
+const src = fs.readFileSync(__dirname + '/../renderer/app.js', 'utf8');
 
 function extract(name) {
   const i = src.indexOf('function ' + name + '(');
@@ -68,7 +68,7 @@ try { normalizeData(null); normalizeData({}); normalizeData('garbage'); normaliz
 ok('垃圾输入不崩溃', !crashed);
 
 console.log('\n[真实用户数据加载]');
-const real = normalizeData(JSON.parse(fs.readFileSync(__dirname + '/data/projects.json', 'utf8')));
+const real = normalizeData(JSON.parse(fs.readFileSync(__dirname + '/../data/projects.json', 'utf8')));
 ok('真实 projects.json 可迁移', !!real.library && real.projects.length >= 1);
 ok('真实数据角色卡无旧字段', real.projects.every(p => p.cards.character.every(c => !('personalityCore' in c) && !('coreDesire' in c))));
 

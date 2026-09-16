@@ -1,7 +1,7 @@
 'use strict';
 /* 第二轮：渲染层纯函数单测（buildFieldContext / parseFieldResult / cleanLLMText / 头像回退） */
 const fs = require('fs');
-const src = fs.readFileSync(__dirname + '/renderer/app.js', 'utf8');
+const src = fs.readFileSync(__dirname + '/../renderer/app.js', 'utf8');
 
 function extractFn(name) {
   const i = src.indexOf('function ' + name + '(');
@@ -76,7 +76,7 @@ const missing = M.CARD_META && require('path'); // 校验 9 个头像文件真�
 const keys = M.AVATAR_DEFS ? [] : [];
 console.log('\n[头像资源完整性]');
 const defs = new Function(extractConst('AVATAR_DEFS') + '; return AVATAR_DEFS;')();
-for (const a of defs) ok('文件存在 ' + a.key, fsx.existsSync(path.join(__dirname, 'renderer', 'icons', 'avatar-' + a.key + '.png')));
+for (const a of defs) ok('文件存在 ' + a.key, fsx.existsSync(path.join(__dirname, '..', 'renderer', 'icons', 'avatar-' + a.key + '.png')));
 
 console.log(`\n== 渲染层纯函数: ${pass} PASS / ${fail} FAIL ==`);
 process.exit(fail ? 1 : 0);

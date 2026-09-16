@@ -1,6 +1,6 @@
 'use strict';
 /* 验收单测：promptBuilder 纯逻辑（README 第六/七节可测规格） */
-const pb = require('./modules/promptBuilder');
+const pb = require('../modules/promptBuilder');
 let pass = 0, fail = 0;
 const ok = (name, cond, detail) => {
   if (cond) { pass++; console.log('  PASS', name); }

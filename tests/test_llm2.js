@@ -1,7 +1,7 @@
 'use strict';
 /* 第二轮：llm.js OpenAI 成功路径 + Ollama 异常响应（mock 服务器） */
 const http = require('http');
-const llm = require('./modules/llm');
+const llm = require('../modules/llm');
 let pass = 0, fail = 0;
 const ok = (n, c, d) => { c ? (pass++, console.log('  PASS', n)) : (fail++, console.log('  FAIL', n, d || '')); };
 

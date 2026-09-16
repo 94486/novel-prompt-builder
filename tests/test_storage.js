@@ -1,7 +1,7 @@
 'use strict';
 /* 第二轮：storage.js 存储层测试（临时目录，不碰真实 data） */
 const os = require('os'), path = require('path'), fs = require('fs');
-const storage = require('./modules/storage');
+const storage = require('../modules/storage');
 let pass = 0, fail = 0;
 const ok = (n, c, d) => { c ? (pass++, console.log('  PASS', n)) : (fail++, console.log('  FAIL', n, d || '')); };
 

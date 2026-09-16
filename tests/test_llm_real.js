@@ -1,7 +1,7 @@
 'use strict';
 /* 真实 Ollama 集成测试：testConnection（90s）+ 一次字段优化风格短请求 */
-const llm = require('./modules/llm');
-const cfg = require('./data/config.json');
+const llm = require('../modules/llm');
+const cfg = require('../data/config.json');
 (async () => {
   const t0 = Date.now();
   const r = await llm.testConnection(cfg);

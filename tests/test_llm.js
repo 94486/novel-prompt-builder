@@ -1,7 +1,7 @@
 'use strict';
 /* 验收单测：llm.js —— 思维链剥离 / 404 指引 / 超时 / 错误文案（本地 mock 服务器，不碰外网） */
 const http = require('http');
-const llm = require('./modules/llm');
+const llm = require('../modules/llm');
 let pass = 0, fail = 0;
 const ok = (n, c, d) => { c ? (pass++, console.log('  PASS', n)) : (fail++, console.log('  FAIL', n, d || '')); };
 

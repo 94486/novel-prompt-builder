@@ -2,9 +2,9 @@
 /* D3 端到端裁决：真实 Ollama 模型 → llm.js(主进程) → parseFieldResult(渲染层清洗)，
    验证"纯文本思维链"最终落到用户字段里的是什么。 */
 const fs = require('fs');
-const llm = require('./modules/llm');
-const pb = require('./modules/promptBuilder');
-const src = fs.readFileSync(__dirname + '/renderer/app.js', 'utf8');
+const llm = require('../modules/llm');
+const pb = require('../modules/promptBuilder');
+const src = fs.readFileSync(__dirname + '/../renderer/app.js', 'utf8');
 function extractFn(name) {
   const i = src.indexOf('function ' + name + '(');
   let depth = 0, started = false;
@@ -14,7 +14,7 @@ function extractFn(name) {
   }
 }
 const M = new Function(extractFn('cleanLLMText') + '\n;\n' + extractFn('parseFieldResult') + '; return { parseFieldResult };')();
-const cfg = require('./data/config.json');
+const cfg = require('../data/config.json');
 
 (async () => {
   const built = pb.buildFieldOptimizePrompt({

@@ -11,6 +11,10 @@ dist/
 *.exe
 build.log
 
+# UI 验收临时截图（本地预览用，不入库）
+_ui_preview/
+_*.png
+
 # 内部文档
 验收报告_20260907.md
 
