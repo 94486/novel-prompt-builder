@@ -2996,6 +2996,12 @@ function bindEvents() {
   $('#btn-project-rename').addEventListener('click', renameProjectDialog);
   $('#btn-library').addEventListener('click', openLibrary);
   $('#btn-settings').addEventListener('click', openSettings);
+  // 开源地址：用系统默认浏览器打开 GitHub 仓库
+  const REPO_URL = 'https://github.com/94486/novel-prompt-builder';
+  const ghBtn = $('#btn-github');
+  if (ghBtn) ghBtn.addEventListener('click', () => {
+    if (window.api && window.api.openExternal) window.api.openExternal(REPO_URL);
+  });
   // 导入 / 导出已移入素材库弹窗（btn-lib-export / btn-lib-import）
   $('#btn-lib-export').addEventListener('click', exportJSON);
   $('#btn-lib-import').addEventListener('click', importJSON);

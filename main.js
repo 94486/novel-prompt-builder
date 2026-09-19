@@ -5,7 +5,7 @@
  * 职责：创建窗口、注册 IPC 通道、转发大模型请求、管理 data 目录。
  */
 
-const { app, BrowserWindow, ipcMain, dialog, Menu } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, Menu, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -279,5 +279,17 @@ function registerIpc() {
   ipcMain.handle('window-close', () => {
     if (mainWindow) mainWindow.close();
     return true;
+  });
+
+  // 用系统默认浏览器打开外部链接（仅允许 http/https）
+  ipcMain.handle('open-external', async (_event, url) => {
+    try {
+      const u = new URL(String(url));
+      if (u.protocol !== 'http:' && u.protocol !== 'https:') return false;
+      await shell.openExternal(u.href);
+      return true;
+    } catch (_e) {
+      return false;
+    }
   });
 }

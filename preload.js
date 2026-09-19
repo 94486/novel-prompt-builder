@@ -38,6 +38,9 @@ contextBridge.exposeInMainWorld('api', {
   /** 切换主窗口全屏状态 */
   toggleFullscreen: () => ipcRenderer.invoke('toggle-fullscreen'),
 
+  /** 用系统默认浏览器打开外部链接（主进程校验 http/https） */
+  openExternal: (url) => ipcRenderer.invoke('open-external', url),
+
   /** 自定义标题栏窗口控制（无边框窗口） */
   windowControl: {
     minimize: () => ipcRenderer.invoke('window-minimize'),
